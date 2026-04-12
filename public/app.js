@@ -11,6 +11,13 @@
   let reportData = null;
   let aiReportData = null;
 
+  // Simulated progress state
+  let simProgress = 0;
+  let simTarget = 0;
+  let simInterval = null;
+  let simPhase = 0;
+  let lastRealPercent = 0;
+
   // ===== ELEMENTS =====
   const $ = id => document.getElementById(id);
   const screens = {
@@ -126,7 +133,10 @@
       // Switch to processing screen
       showScreen('processing');
       $('liveLog').innerHTML = '';
-      updateProgress(0, 'Connecting...');
+      updateProgress(0, 'Initializing...');
+
+      // Start smooth simulated progress
+      startSimulatedProgress();
 
       // Connect WebSocket
       connectWS(sessionId);
@@ -178,41 +188,47 @@
 
   function handleWSMessage(msg) {
     switch (msg.type) {
-      case 'PROGRESS':
-        const pct = Math.round((msg.step / msg.total) * 100);
-        updateProgress(pct, msg.message);
+      case 'PROGRESS': {
+        const realPct = Math.round((msg.step / msg.total) * 100);
+        lastRealPercent = realPct;
+        // Push simulated target ahead when server reports real progress
+        const mappedTarget = Math.min(15 + (realPct * 0.8), 95);
+        if (mappedTarget > simTarget) simTarget = mappedTarget;
+        updateProgressLabel(msg.message);
         break;
+      }
 
       case 'LOG':
         addLog(msg.message, msg.level);
+        // Nudge progress on each log message
+        if (simTarget < 92) simTarget = Math.min(simTarget + 2, 92);
         break;
 
       case 'REPORT_DATA':
         reportData = msg.report;
+        simTarget = 80;
+        updateProgressLabel('Building report...');
         break;
 
       case 'AI_REPORT':
         aiReportData = msg.report;
+        simTarget = 95;
+        updateProgressLabel('AI analysis received...');
         break;
 
       case 'COMPLETE':
         reportData = msg.report || reportData;
         aiReportData = msg.aiReport || aiReportData;
-        updateProgress(100, 'Complete!');
-        setTimeout(() => {
-          showScreen('report');
-          renderReport();
-        }, 800);
+        stopSimulatedProgress();
+        animateToComplete();
         break;
 
       case 'ERROR':
         addLog('❌ ' + msg.message, 'ERR');
         // If we have partial data, still show report
         if (reportData) {
-          setTimeout(() => {
-            showScreen('report');
-            renderReport();
-          }, 2000);
+          stopSimulatedProgress();
+          animateToComplete();
         }
         break;
 
@@ -236,19 +252,123 @@
     "Marginal relief ensures your post-tax income never drops due to a small salary increase."
   ];
   let factIdx = 0;
+  let factTimer = null;
 
-  function updateProgress(pct, label) {
+  // Phase labels for simulated progress
+  const phaseLabels = [
+    { at: 0,  label: 'Initializing...' },
+    { at: 5,  label: 'Connecting to server...' },
+    { at: 12, label: 'Uploading documents...' },
+    { at: 20, label: 'Parsing ITR JSON data...' },
+    { at: 30, label: 'Extracting PDF content...' },
+    { at: 40, label: 'Analyzing income sources...' },
+    { at: 50, label: 'Computing deductions...' },
+    { at: 58, label: 'Calculating tax liability...' },
+    { at: 65, label: 'Cross-verifying with TIS...' },
+    { at: 72, label: 'Running AI deep analysis...' },
+    { at: 80, label: 'Building tax profile...' },
+    { at: 88, label: 'Generating insights...' },
+    { at: 95, label: 'Finalizing report...' }
+  ];
+  let currentPhaseLabel = 'Initializing...';
+
+  function startSimulatedProgress() {
+    simProgress = 0;
+    simTarget = 15; // Initial target while connecting
+    lastRealPercent = 0;
+
+    // Rotate facts every 4 seconds
+    factIdx = Math.floor(Math.random() * factsData.length);
+    $('factText').textContent = factsData[factIdx];
+    factTimer = setInterval(() => {
+      factIdx = (factIdx + 1) % factsData.length;
+      const factEl = $('factText');
+      factEl.style.opacity = '0';
+      setTimeout(() => {
+        factEl.textContent = factsData[factIdx];
+        factEl.style.opacity = '1';
+      }, 300);
+    }, 4000);
+
+    // Smooth tick every 80ms
+    simInterval = setInterval(() => {
+      // Ease toward target — slows as it approaches
+      const diff = simTarget - simProgress;
+      if (diff > 0) {
+        // Fast at first, slowing near target
+        const step = Math.max(0.1, diff * 0.04);
+        simProgress = Math.min(simProgress + step, simTarget);
+      }
+
+      // Auto-advance target slowly over time (simulates background work)
+      if (simTarget < 88) {
+        simTarget += 0.02;
+      }
+
+      const displayPct = Math.round(simProgress);
+      updateProgressRing(displayPct);
+
+      // Update phase label based on progress
+      for (let i = phaseLabels.length - 1; i >= 0; i--) {
+        if (displayPct >= phaseLabels[i].at) {
+          if (currentPhaseLabel !== phaseLabels[i].label) {
+            currentPhaseLabel = phaseLabels[i].label;
+            $('progressLabel').textContent = currentPhaseLabel;
+          }
+          break;
+        }
+      }
+    }, 80);
+  }
+
+  function stopSimulatedProgress() {
+    if (simInterval) { clearInterval(simInterval); simInterval = null; }
+    if (factTimer) { clearInterval(factTimer); factTimer = null; }
+  }
+
+  function animateToComplete() {
+    // Smoothly animate from current to 100%
+    const startPct = simProgress;
+    const startTime = performance.now();
+    const duration = 600; // 600ms to fill to 100%
+
+    function tick(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
+      const currentPct = Math.round(startPct + (100 - startPct) * eased);
+      updateProgressRing(currentPct);
+
+      if (t < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        updateProgressRing(100);
+        $('progressLabel').textContent = '✅ Analysis Complete!';
+        setTimeout(() => {
+          showScreen('report');
+          renderReport();
+        }, 600);
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function updateProgressRing(pct) {
     const ring = $('progressRing');
     const circumference = 2 * Math.PI * 60;
     ring.style.strokeDashoffset = circumference - (pct / 100) * circumference;
     $('progressPercent').textContent = pct + '%';
-    $('progressLabel').textContent = label;
+  }
 
-    // Rotate facts
-    if (pct > 0 && pct < 100) {
-      factIdx = (factIdx + 1) % factsData.length;
-      $('factText').textContent = factsData[factIdx];
-    }
+  function updateProgress(pct, label) {
+    updateProgressRing(pct);
+    $('progressLabel').textContent = label;
+  }
+
+  function updateProgressLabel(label) {
+    currentPhaseLabel = label;
+    $('progressLabel').textContent = label;
   }
 
   function addLog(text, level) {
