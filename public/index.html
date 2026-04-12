@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MakeEazy Tax Analyser — Upload & Analyze</title>
+  <meta name="description" content="Upload your ITR JSONs, AIS/TIS PDFs and get instant AI-powered tax profile analysis. Access anywhere, anytime, any device.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <!-- ===== HEADER ===== -->
+    <header id="appHeader">
+      <div class="header-inner">
+        <div class="logo">
+          <div class="logo-icon">📊</div>
+          <div>
+            <h1>Make<span>Eazy</span></h1>
+            <p class="tagline">Tax Analyser Online</p>
+          </div>
+        </div>
+        <div class="header-badge">
+          <span class="pulse-dot"></span>
+          <span>Access Anywhere • Any Device</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== SCREEN 1: UPLOAD ===== -->
+    <section class="screen active" id="screenUpload">
+      <div class="upload-hero">
+        <div class="hero-glow"></div>
+        <h2>Upload Your Tax Documents</h2>
+        <p class="hero-sub">Drop your ITR JSONs and AIS/TIS PDFs — we'll do the rest</p>
+
+        <!-- Drop Zone -->
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <p class="drop-text">Drag & drop files here</p>
+          <p class="drop-sub">or click to browse</p>
+          <input type="file" id="fileInput" multiple accept=".json,.pdf" hidden>
+        </div>
+
+        <!-- File List -->
+        <div class="file-list" id="fileList"></div>
+
+        <!-- Optional Fields -->
+        <div class="optional-fields" id="optionalFields" style="display:none">
+          <div class="field-row">
+            <div class="field-group">
+              <label for="panInput">PAN (auto-detected)</label>
+              <input type="text" id="panInput" placeholder="ABCDE1234F" maxlength="10" style="text-transform:uppercase" autocomplete="off">
+            </div>
+            <div class="field-group">
+              <label for="dobInput">DOB (for PDF password)</label>
+              <input type="date" id="dobInput">
+            </div>
+          </div>
+          <p class="field-hint">💡 PAN is auto-detected from ITR JSONs. DOB helps unlock password-protected AIS/TIS PDFs.</p>
+        </div>
+
+        <!-- Analyze Button -->
+        <button class="btn-analyze" id="btnAnalyze" disabled>
+          <span class="btn-icon">⚡</span>
+          <span class="btn-text">Analyze Now</span>
+        </button>
+
+        <!-- Accepted Formats -->
+        <div class="format-badges">
+          <span class="badge json">ITR JSON</span>
+          <span class="badge pdf">AIS PDF</span>
+          <span class="badge pdf">TIS PDF</span>
+          <span class="badge info">ITR-1 to ITR-7</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SCREEN 2: PROCESSING ===== -->
+    <section class="screen" id="screenProcessing">
+      <div class="processing-card">
+        <div class="progress-ring-wrap">
+          <svg class="progress-ring" width="140" height="140">
+            <circle class="ring-bg" cx="70" cy="70" r="60" fill="none" stroke-width="7"/>
+            <circle class="ring-fill" id="progressRing" cx="70" cy="70" r="60" fill="none" stroke-width="7"
+              stroke-dasharray="377" stroke-dashoffset="377"/>
+          </svg>
+          <div class="progress-percent" id="progressPercent">0%</div>
+        </div>
+
+        <h3 id="progressLabel">Preparing analysis...</h3>
+
+        <div class="fact-carousel">
+          <div class="fact-icon">💡</div>
+          <p class="fact-text" id="factText">Did you know? India has over 7.28 crore ITR filers as of FY 2023-24.</p>
+        </div>
+
+        <!-- Live Log -->
+        <div class="live-log" id="liveLog"></div>
+      </div>
+    </section>
+
+    <!-- ===== SCREEN 3: REPORT ===== -->
+    <section class="screen" id="screenReport">
+      <!-- Top Bar -->
+      <div class="report-topbar">
+        <button class="btn-outline" id="btnNewAnalysis">
+          <span>🔄</span> New Analysis
+        </button>
+        <div class="topbar-actions">
+          <button class="btn-green" id="btnDownloadExcel">
+            <span>📊</span> Excel Report
+          </button>
+          <button class="btn-outline" id="btnDownloadZip">
+            <span>📦</span> Download ZIP
+          </button>
+        </div>
+      </div>
+
+      <!-- AI Hero -->
+      <div class="ai-hero" id="aiHero">
+        <div class="ai-badge-wrap">
+          <span class="ai-badge">🤖 AI Analysis</span>
+          <span class="ai-model" id="aiModel"></span>
+        </div>
+        <div class="ai-summary" id="aiSummary"></div>
+        <div class="ai-meta" id="aiMeta"></div>
+      </div>
+
+      <!-- Profile Cards -->
+      <div class="profile-cards" id="profileCards"></div>
+
+      <!-- Compliance + Risk -->
+      <div class="dual-panel" id="dualPanel">
+        <div class="panel" id="compliancePanel"></div>
+        <div class="panel" id="riskPanel"></div>
+      </div>
+
+      <!-- Report Tabs -->
+      <div class="tabs" id="reportTabs">
+        <button class="tab active" data-tab="computation">📋 Computation</button>
+        <button class="tab" data-tab="income">📈 Income</button>
+        <button class="tab" data-tab="deductions">🏷️ Deductions</button>
+        <button class="tab" data-tab="optimization">💡 Optimize</button>
+        <button class="tab" data-tab="mismatch">⚠️ Mismatches</button>
+        <button class="tab" data-tab="tisdata">🏛️ AIS/TIS</button>
+        <button class="tab" data-tab="ask">💬 Ask AI</button>
+      </div>
+
+      <div class="tab-content active" id="tab-computation"><div id="computationContainer"></div></div>
+      <div class="tab-content" id="tab-income"><div id="incomeContainer"></div></div>
+      <div class="tab-content" id="tab-deductions"><div id="deductionsContainer"></div></div>
+      <div class="tab-content" id="tab-optimization"><div id="optimizationContainer"></div></div>
+      <div class="tab-content" id="tab-mismatch"><div id="mismatchContainer"></div></div>
+      <div class="tab-content" id="tab-tisdata"><div id="tisdataContainer"></div></div>
+      <div class="tab-content" id="tab-ask">
+        <div class="ask-box">
+          <h4>💬 Ask about this taxpayer's data</h4>
+          <div class="ask-input-wrap">
+            <input type="text" id="askInput" placeholder="e.g., Should I switch to old regime? What deductions am I missing?">
+            <button class="btn-primary" id="btnAsk">Ask</button>
+          </div>
+          <div id="askResponse"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p>MakeEazy Tax Analyser Online &bull; Your data is processed securely &bull; <a href="https://makeeazy.in" target="_blank">makeeazy.in</a></p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
