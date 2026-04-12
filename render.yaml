@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: makeeazy-tax-analyzer
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: NODE_ENV
+        value: production
