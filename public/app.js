@@ -61,20 +61,35 @@ dropZone.addEventListener('drop', e => {
 fileInput.addEventListener('change', () => handleFiles(fileInput.files));
 
 function handleFiles(files) {
-  let hasJson = false;
   for (const file of files) {
     const ext = file.name.split('.').pop().toLowerCase();
     if (!['json', 'pdf'].includes(ext)) continue;
     if (uploadedFiles.find(f => f.name === file.name)) continue;
     uploadedFiles.push(file);
-    if (ext === 'json') hasJson = true;
   }
   renderFileList();
-  // Must have at least 1 JSON file
+  validateUploads();
+}
+
+function validateUploads() {
   const jsonCount = uploadedFiles.filter(f => f.name.toLowerCase().endsWith('.json')).length;
-  btnAnalyze.disabled = jsonCount === 0;
-  if (uploadedFiles.length > 0) {
-    $('optionalFields').style.display = '';
+  const pdfCount = uploadedFiles.filter(f => f.name.toLowerCase().endsWith('.pdf')).length;
+  const valEl = $('uploadValidation');
+
+  const missing = [];
+  if (jsonCount === 0) missing.push('📄 ITR JSON (mandatory)');
+  if (pdfCount === 0) missing.push('📑 TIS PDF (mandatory)');
+
+  if (missing.length > 0) {
+    valEl.innerHTML = '⚠️ Missing: ' + missing.join(' &bull; ');
+    valEl.className = 'upload-validation warn';
+    valEl.style.display = '';
+    btnAnalyze.disabled = true;
+  } else {
+    valEl.innerHTML = '✅ Ready — ' + jsonCount + ' ITR JSON' + (jsonCount > 1 ? 's' : '') + ' + ' + pdfCount + ' TIS PDF' + (pdfCount > 1 ? 's' : '');
+    valEl.className = 'upload-validation ok';
+    valEl.style.display = '';
+    btnAnalyze.disabled = false;
   }
 }
 
@@ -82,13 +97,8 @@ function renderFileList() {
   fileList.innerHTML = uploadedFiles.map((f, i) => {
     const ext = f.name.split('.').pop().toLowerCase();
     const name = f.name.toLowerCase();
-    let type = ext === 'json' ? 'ITR JSON' : 'PDF';
-    let typeClass = ext === 'json' ? 'itr' : 'unknown';
-    if (ext === 'pdf') {
-      if (name.includes('ais')) { type = 'AIS PDF'; typeClass = 'ais'; }
-      else if (name.includes('tis')) { type = 'TIS PDF'; typeClass = 'tis'; }
-      else { type = 'PDF'; typeClass = 'unknown'; }
-    }
+    let type = ext === 'json' ? 'ITR JSON' : 'TIS PDF';
+    let typeClass = ext === 'json' ? 'itr' : 'tis';
     const size = f.size > 1024 * 1024
       ? (f.size / 1024 / 1024).toFixed(1) + ' MB'
       : (f.size / 1024).toFixed(0) + ' KB';
@@ -109,9 +119,8 @@ function renderFileList() {
       const idx = parseInt(e.target.dataset.idx);
       uploadedFiles.splice(idx, 1);
       renderFileList();
-      const jsonCount = uploadedFiles.filter(f => f.name.toLowerCase().endsWith('.json')).length;
-      btnAnalyze.disabled = jsonCount === 0;
-      if (uploadedFiles.length === 0) $('optionalFields').style.display = 'none';
+      validateUploads();
+      if (uploadedFiles.length === 0) $('uploadValidation').style.display = 'none';
     });
   });
 }
@@ -121,8 +130,9 @@ btnAnalyze.addEventListener('click', startAnalysis);
 
 async function startAnalysis() {
   const jsonCount = uploadedFiles.filter(f => f.name.toLowerCase().endsWith('.json')).length;
-  if (jsonCount === 0) {
-    alert('At least 1 ITR JSON file is mandatory for analysis.');
+  const pdfCount = uploadedFiles.filter(f => f.name.toLowerCase().endsWith('.pdf')).length;
+  if (jsonCount === 0 || pdfCount === 0) {
+    alert('Both ITR JSON files and TIS PDF are mandatory for analysis.');
     return;
   }
 
@@ -167,14 +177,11 @@ async function startAnalysis() {
     // Connect WebSocket
     connectWS(sessionId);
 
-    // Trigger analysis
-    const pan = $('panInput').value.trim().toUpperCase();
-    const dob = $('dobInput').value;
-
+    // Trigger analysis — PAN & DOB auto-extracted from ITR JSON on server
     const analyzeResp = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, pan: pan || undefined, dob: dob || undefined })
+      body: JSON.stringify({ sessionId })
     });
     const analyzeResult = await analyzeResp.json();
     if (!analyzeResp.ok) throw new Error(analyzeResult.error || 'Analysis failed');
@@ -848,7 +855,7 @@ $('btnNewPan').onclick = () => {
   aiReportData = null;
   sessionId = null;
   fileList.innerHTML = '';
-  $('optionalFields').style.display = 'none';
+  $('uploadValidation').style.display = 'none';
   btnAnalyze.disabled = true;
   btnAnalyze.innerHTML = '<span>⚡</span> Analyze Now';
   // Reset progress ring

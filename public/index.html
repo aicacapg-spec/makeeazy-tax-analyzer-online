@@ -21,7 +21,7 @@
     <section class="login-section" id="uploadSection">
       <div class="login-card" style="max-width:580px">
         <h2>📤 Upload Tax Documents</h2>
-        <p class="subtitle">Drop your ITR JSONs and AIS/TIS PDFs — we'll analyze them instantly</p>
+        <p class="subtitle">Drop your ITR JSONs and TIS PDF — we'll analyze them instantly</p>
 
         <!-- Required Files Info -->
         <div class="required-files-info">
@@ -32,18 +32,13 @@
               <span class="req-label">📄 ITR JSON Files</span>
               <span class="req-desc">Download from <a href="https://eportal.incometax.gov.in" target="_blank">Income Tax e-Filing Portal</a> → View Filed Returns → Download JSON</span>
             </div>
-            <div class="req-item optional">
-              <span class="req-badge opt">RECOMMENDED</span>
-              <span class="req-label">📑 AIS PDF</span>
-              <span class="req-desc">Annual Information Statement — enables mismatch detection & cross-verification</span>
-            </div>
-            <div class="req-item optional">
-              <span class="req-badge opt">RECOMMENDED</span>
+            <div class="req-item mandatory">
+              <span class="req-badge must">MANDATORY</span>
               <span class="req-label">📑 TIS PDF</span>
-              <span class="req-desc">Taxpayer Information Summary — enriches AI insights with third-party data</span>
+              <span class="req-desc">Taxpayer Information Summary — enables mismatch detection, cross-verification & AI insights. Password auto-decrypted using PAN+DOB from ITR.</span>
             </div>
           </div>
-          <p class="req-tip">💡 Upload ITR JSONs for multiple assessment years (2022-26) for year-over-year trend analysis</p>
+          <p class="req-tip">💡 Upload ITR JSONs for multiple assessment years (2022-26) for year-over-year trend analysis. PAN & DOB are auto-extracted from your ITR JSONs.</p>
         </div>
 
         <!-- Drop Zone -->
@@ -59,20 +54,8 @@
         <!-- File List -->
         <div id="fileList"></div>
 
-        <!-- Optional Fields -->
-        <div class="optional-fields" id="optionalFields" style="display:none">
-          <div class="field-row">
-            <div class="form-group" style="flex:1">
-              <label for="panInput">PAN (auto-detected from ITR)</label>
-              <input type="text" id="panInput" placeholder="ABCDE1234F" maxlength="10" autocomplete="off" style="text-transform:uppercase">
-            </div>
-            <div class="form-group" style="flex:1">
-              <label for="dobInput">DOB (for PDF password)</label>
-              <input type="date" id="dobInput">
-            </div>
-          </div>
-          <p class="field-hint">💡 PAN is auto-detected from ITR JSONs. DOB helps unlock password-protected AIS/TIS PDFs.</p>
-        </div>
+        <!-- Validation Message -->
+        <div class="upload-validation" id="uploadValidation" style="display:none"></div>
 
         <!-- Analyze Button -->
         <div class="login-actions" style="justify-content:center;margin-top:20px">
