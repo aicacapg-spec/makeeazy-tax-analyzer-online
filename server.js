@@ -50,7 +50,13 @@ fs.mkdirSync(TEMP_DIR, { recursive: true });
 
 // ===== MIDDLEWARE =====
 app.use(express.json({ limit: '50mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve obfuscated files in production, original in development
+const PUBLIC_DIR = process.env.NODE_ENV === 'production' || fs.existsSync(path.join(__dirname, 'public-dist'))
+  ? path.join(__dirname, 'public-dist')
+  : path.join(__dirname, 'public');
+console.log(`[STATIC] Serving from: ${path.basename(PUBLIC_DIR)}`);
+app.use(express.static(PUBLIC_DIR));
 
 // Multer config for file uploads
 const storage = multer.diskStorage({

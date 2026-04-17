@@ -4,7 +4,8 @@
   "description": "MakeEazy Tax Analyser Online — Upload PDFs & JSONs, Get AI Tax Profile",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "NODE_ENV=production node server.js",
+    "build": "node build.js",
     "dev": "node --watch server.js"
   },
   "dependencies": {
@@ -18,5 +19,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "javascript-obfuscator": "^5.4.1"
   }
 }

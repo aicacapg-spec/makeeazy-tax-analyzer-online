@@ -4,8 +4,8 @@ services:
     runtime: node
     region: oregon
     plan: free
-    buildCommand: npm install
-    startCommand: node server.js
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: NODE_ENV=production node server.js
     envVars:
       - key: GROQ_API_KEY
         sync: false
