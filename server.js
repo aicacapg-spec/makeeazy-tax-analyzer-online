@@ -51,10 +51,10 @@ fs.mkdirSync(TEMP_DIR, { recursive: true });
 // ===== MIDDLEWARE =====
 app.use(express.json({ limit: '50mb' }));
 
-// Serve obfuscated files in production, original in development
-const PUBLIC_DIR = process.env.NODE_ENV === 'production' || fs.existsSync(path.join(__dirname, 'public-dist'))
-  ? path.join(__dirname, 'public-dist')
-  : path.join(__dirname, 'public');
+// Serve obfuscated files in production (if build succeeded), original otherwise
+const distDir = path.join(__dirname, 'public-dist');
+const srcDir = path.join(__dirname, 'public');
+const PUBLIC_DIR = fs.existsSync(path.join(distDir, 'index.html')) ? distDir : srcDir;
 console.log(`[STATIC] Serving from: ${path.basename(PUBLIC_DIR)}`);
 app.use(express.static(PUBLIC_DIR));
 
